@@ -1,0 +1,229 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pagina ostile — fixture</title>
+<!--
+  Fixture: riproduce i due modali che rompono davvero un widget iniettato dal di
+  fuori, e che una trappola "in bolla" non rappresenta.
+
+    fase 1 — overlay fatto a mano, con trappola di focus **in cattura**: gira
+             prima che l'evento arrivi al bersaglio, quindi da fuori non si ferma;
+    fase 3 — <dialog> aperto con showModal(): il browser rende inerte tutto ciò
+             che sta fuori dal top layer, e non c'è nessun attributo da togliere.
+
+  In entrambi i casi l'unica difesa è spostarsi dentro il modale. Il confronto è
+  nella pagina: due widget identici, uno protetto da shield.js e uno nudo.
+-->
+<style>
+  body { font:14px/1.5 system-ui, sans-serif; margin:0; padding:22px; }
+  .modale { position:fixed; inset:0; z-index:2147483647; background:rgba(0,0,0,.55);
+            display:grid; place-items:center; }
+  .modale[hidden] { display:none; }
+  .modale .box { background:#fff; padding:22px; border-radius:6px; width:min(420px,90vw); }
+  .wc, .wc-nudo { position:fixed; bottom:16px; width:300px; background:#fff;
+                  border:1px solid #dfe2e7; border-radius:4px; padding:12px; z-index:2147483000; }
+  .wc { right:16px; } .wc-nudo { left:16px; }
+  input { width:100%; box-sizing:border-box; padding:8px; font:inherit; }
+  pre#selftest { position:fixed; inset:auto 8px 8px 8px; background:#14171a; color:#e7e9ee;
+                 padding:12px; font:12px/1.6 ui-monospace,monospace; white-space:pre-wrap;
+                 z-index:2147483647; }
+</style>
+
+<h1>Pagina con modali ostili</h1>
+
+<div class="modale" id="modale" role="dialog" aria-modal="true" hidden>
+  <div class="box"><label>Cerca nel sito<input id="campo-modale" type="search"></label></div>
+</div>
+
+<!-- overlay anonimo: nessun role, nessun aria-modal. Solo un riquadro fisso. -->
+<div id="pannello" style="position:fixed; inset:0; z-index:2147483646;
+     background:rgba(10,12,16,.5); display:none; place-items:center;">
+  <div style="background:#fff; padding:22px; border-radius:6px;">
+    <input id="campo-pannello" type="search" aria-label="Ricerca anonima">
+  </div>
+</div>
+
+<!-- overlay che sfugge a ogni rilevazione: non e' fisso, non copre lo schermo,
+     non ha z-index. Ruba il fuoco lo stesso. Qui l'unica difesa e' accorgersene. -->
+<div id="sfuggente" style="position:absolute; top:60px; left:60px; width:40vw; height:40vh;
+     background:#eef; display:none;">
+  <input id="campo-sfuggente" type="search" aria-label="Ricerca sfuggente">
+</div>
+
+<dialog id="vero-dialog">
+  <p>Overlay nativo</p><input id="campo-dialog" type="search">
+</dialog>
+
+<!-- il widget di Docty, nella forma in cui lo monta chat-widget.js -->
+<div class="wc"><input class="wc-input" aria-label="Messaggio protetto"></div>
+<!-- lo stesso widget senza scudo: gruppo di controllo -->
+<div class="wc-nudo"><input class="nudo-input" aria-label="Messaggio non protetto"></div>
+
+<script>
+const modale = document.getElementById("modale");
+const campoModale = document.getElementById("campo-modale");
+const dlg = document.getElementById("vero-dialog");
+
+// Trappola di focus in CATTURA: è la differenza che conta. In fase di cattura
+// questo ascoltatore vede l'evento prima del bersaglio, quindi nessuno stop
+// applicato al widget può impedirglielo.
+document.addEventListener("focusin", (ev) => {
+  if (modale.hidden) return;
+  if (!modale.contains(ev.target)) campoModale.focus();
+}, true);
+
+const pannello = document.getElementById("pannello");
+const campoPannello = document.getElementById("campo-pannello");
+
+// Stessa trappola in cattura, su un overlay che non dice di essere un modale.
+document.addEventListener("focusin", (ev) => {
+  if (pannello.style.display === "none") return;
+  if (!pannello.contains(ev.target)) campoPannello.focus();
+}, true);
+
+const sfuggente = document.getElementById("sfuggente");
+const campoSfuggente = document.getElementById("campo-sfuggente");
+document.addEventListener("focusin", (ev) => {
+  if (sfuggente.style.display === "none") return;
+  if (!sfuggente.contains(ev.target)) campoSfuggente.focus();
+}, true);
+
+function ogniFratello(fn) {
+  for (const radice of [document.body, document.documentElement]) {
+    for (const el of radice.children) {
+      if (el === modale || el.contains(modale)) continue;
+      if (el.tagName === "SCRIPT" || el.tagName === "STYLE") continue;
+      fn(el);
+    }
+  }
+}
+const disattivaIlResto = () => ogniFratello((el) => {
+  el.setAttribute("inert", "");
+  el.setAttribute("aria-hidden", "true");
+});
+// Un modale vero ripristina quello che ha disattivato quando si chiude.
+const riattivaIlResto = () => ogniFratello((el) => {
+  el.removeAttribute("inert");
+  el.removeAttribute("aria-hidden");
+});
+</script>
+
+<script src="../extension/shield.js"></script>
+
+<script>
+(async () => {
+  const esiti = [];
+  const eq = (nome, atteso, avuto) => esiti.push(
+    `${JSON.stringify(avuto) === JSON.stringify(atteso) ? "PASS" : "FAIL"}  ${nome}` +
+    (JSON.stringify(avuto) === JSON.stringify(atteso) ? "" :
+      `\n        atteso ${JSON.stringify(atteso)}\n        avuto  ${JSON.stringify(avuto)}`)
+  );
+  const attendi = (ms = 700) => new Promise((r) => setTimeout(r, ms));
+  const wc = () => document.querySelector(".wc");
+  const protetto = () => document.querySelector(".wc-input");
+
+  // ── fase 0: pagina tranquilla ────────────────────────────────────────
+  await attendi(300);
+  eq("a riposo il widget sta fuori dal body", "HTML", wc().parentElement.tagName);
+  eq("z-index al massimo", "2147483647", wc().style.zIndex);
+
+  // ── fase 1: overlay fatto a mano, trappola in cattura ────────────────
+  modale.hidden = false;
+  disattivaIlResto();
+  await attendi();
+
+  eq("inert tolto dal widget", false, wc().hasAttribute("inert"));
+  eq("aria-hidden tolto dal widget", false, wc().hasAttribute("aria-hidden"));
+  eq("il widget e' entrato nel modale", true, modale.contains(wc()));
+
+  // controllo: il widget nudo. Gli togliamo l'inert perche' qui vogliamo mettere
+  // alla prova la trappola di focus, non l'inert: se restasse, non prenderebbe il
+  // fuoco per il motivo sbagliato e il confronto non proverebbe niente.
+  document.querySelector(".wc-nudo").removeAttribute("inert");
+  document.querySelector(".nudo-input").focus();
+  await attendi(80);
+  eq("la trappola in cattura ruba il focus al widget nudo", "campo-modale", document.activeElement.id);
+
+  protetto().focus();
+  await attendi(80);
+  eq("il widget protetto tiene il focus", "wc-input", document.activeElement.className);
+
+  protetto().dispatchEvent(new Event("input", { bubbles: true }));
+  await attendi(80);
+  eq("scrivere non risveglia la trappola", "wc-input", document.activeElement.className);
+
+  // ── fase 2: l'overlay si chiude ──────────────────────────────────────
+  modale.hidden = true;
+  riattivaIlResto();
+  await attendi();
+  eq("chiuso il modale, il widget torna a casa", "HTML", wc().parentElement.tagName);
+
+  // ── fase 3: <dialog> nativo, inerzia decisa dal browser ──────────────
+  dlg.showModal();
+  await attendi();
+  eq("il widget e' entrato nel dialog", true, dlg.contains(wc()));
+
+  // Controllo: fuori dal top layer, showModal() rende inerte tutto. Se il widget
+  // nudo restasse focalizzabile, il test non starebbe dimostrando niente.
+  document.querySelector(".nudo-input").focus();
+  await attendi(80);
+  eq("fuori dal dialog non si prende il focus", false,
+     document.activeElement.className === "nudo-input");
+
+  protetto().focus();
+  await attendi(80);
+  eq("con showModal() il widget resta focalizzabile", "wc-input", document.activeElement.className);
+
+  // ── fase 4: overlay anonimo, riconoscibile solo da quello che fa ─────
+  dlg.close();
+  await attendi();
+  pannello.style.display = "grid";
+  await attendi();
+
+  eq("l'overlay anonimo viene comunque riconosciuto", true, pannello.contains(wc()));
+
+  protetto().focus();
+  await attendi(120);
+  eq("e il widget resta digitabile", "wc-input", document.activeElement.className);
+
+  // La diagnostica deve saper rispondere anche quando tutto funziona.
+  const report = await window.__doctyFocusReport__();
+  eq("la diagnostica conferma che il fuoco e' nostro", true, report.il_fuoco_e_nostro);
+
+  // ── fase 5: overlay che nessun controllo riesce a rilevare ──────────
+  pannello.style.display = "none";
+  await attendi();
+  sfuggente.style.display = "block";
+  await attendi();
+
+  eq("nessuna rilevazione lo vede: il widget non si e' mosso", false, sfuggente.contains(wc()));
+
+  // Primo tentativo: il fuoco viene strappato, e proprio da li' lo scudo capisce
+  // dove deve stare.
+  protetto().focus();
+  await attendi(200);
+  eq("dal furto lo scudo impara dove spostarsi", true, sfuggente.contains(wc()));
+  eq("e dopo lo spostamento si digita", "wc-input", document.activeElement.className);
+
+  // ── fase 6: chi ha staccato il widget? ──────────────────────────────
+  sfuggente.style.display = "none";
+  await attendi();
+
+  // Il sito lo rimuove: lo scudo deve rimetterlo.
+  wc().remove();
+  await attendi();
+  eq("staccato dal sito, il widget torna", true, !!document.querySelector(".wc"));
+
+  // L'utente preme la ×: deve restare chiuso.
+  const w = wc();
+  w.dataset.doctyClosed = "1";
+  w.remove();
+  await attendi();
+  eq("chiuso dall'utente, il widget resta chiuso", null, document.querySelector(".wc"));
+
+  const falliti = esiti.filter((r) => r.startsWith("FAIL")).length;
+  const pre = document.createElement("pre");
+  pre.id = "selftest";
+  pre.textContent = `${esiti.join("\n")}\n\n${esiti.length - falliti} passati, ${falliti} falliti`;
+  document.documentElement.appendChild(pre);
+})();
+</script>

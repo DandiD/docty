@@ -195,7 +195,7 @@ export function pickProvider() {
   if (name === "gemini") {
     return {
       name, to: toGemini, from: fromGemini,
-      model: process.env.MODEL ?? "gemini-2.5-flash-lite",
+      model: process.env.MODEL ?? "gemini-3.1-flash-lite",
       // Flash-Lite ha più capacità disponibile: è la rete di sicurezza sui 503.
       // 2.5 Flash-Lite viene spento il 16 ottobre 2026: quando risponderà 404
       // la catena scivola da sola sui successori, senza toccare il codice.
