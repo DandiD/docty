@@ -1,0 +1,155 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Prestazioni — fixture</title>
+<!--
+  Fixture: una pagina grossa come quelle vere — migliaia di nodi, centinaia di
+  link, un overlay fisso — su cui misurare quanto costano le funzioni che
+  l'estensione chiama a ogni domanda.
+
+  Non verifica che siano "veloci" in astratto: fissa un tetto. Serve a far
+  fallire il giorno in cui qualcuno reintroduce una scansione dell'intero
+  documento, che è il modo in cui questa estensione ha già bloccato una scheda.
+-->
+<style>
+  body { font:13px/1.5 system-ui, sans-serif; margin:0; padding:16px; }
+  .tile { display:inline-block; width:150px; margin:6px; vertical-align:top; }
+  .tile img { width:100%; height:96px; background:#e6e8ec; display:block; }
+  .rumore { color:#8b929c; }
+  .bag-count { background:#14171a; color:#fff; border-radius:50%; padding:1px 6px; }
+  .overlay { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.4); display:none; }
+  pre#selftest { position:fixed; inset:auto 8px 8px 8px; background:#14171a; color:#e7e9ee;
+                 padding:12px; font:12px/1.6 ui-monospace,monospace; white-space:pre-wrap;
+                 z-index:2147483647; }
+</style>
+
+<header><a class="bag" href="/cart" aria-label="Shopping bag">Bag <span class="bag-count">0</span></a></header>
+<button id="atb">Add to Bag</button>
+<div id="griglia"></div>
+<div id="rumore"></div>
+<div class="overlay" id="overlay"><input id="campo-overlay" type="search"></div>
+<div class="wc" style="position:fixed;right:8px;bottom:8px;width:200px;background:#fff">
+  <input class="wc-input">
+</div>
+
+<script>
+// 60 card vere, come una pagina di elenco piena.
+const foto = "data:image/svg+xml," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="96"></svg>');
+document.getElementById("griglia").innerHTML = Array.from({ length: 60 }, (_, i) => `
+  <div class="tile">
+    <a href="/p/${i}" aria-label="Modello ${i}"><img alt="Modello ${i}" src="${foto}"></a>
+    <div>Modello ${i}</div><div class="price">$${100 + i}.00</div>
+  </div>`).join("");
+
+// ~4000 nodi di contorno: menu, filtri, piè di pagina, link ovunque. È questo
+// che distingue una pagina di prova da una vera.
+document.getElementById("rumore").innerHTML = Array.from({ length: 1000 }, (_, i) =>
+  `<div class="rumore"><span>voce ${i}</span> <a href="/x/${i}">link ${i}</a>
+   <button>azione ${i}</button></div>`).join("");
+</script>
+
+<script src="../extension/shop-dom.js"></script>
+<script src="../extension/shield.js"></script>
+
+<script>
+(async () => {
+  const esiti = [];
+  const ok = (nome, cond, dettaglio) => esiti.push(
+    `${cond ? "PASS" : "FAIL"}  ${nome}${dettaglio ? `  (${dettaglio})` : ""}`);
+  const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
+  const D = window.__DOCTY_DOM__;
+
+  // Si contano le letture di stile e geometria, non i millisecondi: sono la
+  // grandezza che conta davvero — ognuna costringe il browser a ricalcolare —
+  // e a differenza del tempo non dipendono dalla macchina né dall'orologio, che
+  // in headless è virtuale e resterebbe fermo.
+  let letture = 0;
+  const stileNativo = window.getComputedStyle;
+  window.getComputedStyle = function (...a) { letture++; return stileNativo.apply(this, a); };
+  const rettNativo = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function (...a) { letture++; return rettNativo.apply(this, a); };
+  const rettsNativo = Element.prototype.getClientRects;
+  Element.prototype.getClientRects = function (...a) { letture++; return rettsNativo.apply(this, a); };
+
+  const costo = (fn) => { letture = 0; fn(); return letture; };
+
+  await attendi(300);
+
+  const nodi = document.querySelectorAll("*").length;
+  ok("la pagina è davvero grande", nodi > 3500, `${nodi} nodi`);
+
+  const cCards = costo(() => D.cards());
+  ok("cards() non setaccia la pagina", cCards < 400, `${cCards} letture di layout`);
+  ok("e trova le 60 card", D.cards().length === 60, `${D.cards().length}`);
+
+  const cAdd = costo(() => D.addButton());
+  ok("addButton() scarta per testo, non per geometria", cAdd < 60, `${cAdd} letture`);
+  ok("e trova il bottone", D.addButton()?.id === "atb", D.addButton()?.id ?? "nessuno");
+
+  const cCart = costo(() => D.cartCount());
+  ok("cartCount() parte dal carrello, non dai nodi di testo", cCart < 60, `${cCart} letture`);
+  ok("e legge il contatore", D.cartCount() === 0, String(D.cartCount()));
+
+  const cLink = costo(() => D.cartLink());
+  ok("cartLink() filtra prima per attributi", cLink < 60, `${cLink} letture`);
+
+  const cSize = costo(() => D.sizeOptions());
+  ok("sizeOptions() legge l'etichetta prima dello stile", cSize < 60, `${cSize} letture`);
+
+  const cOst = costo(() => window.__doctyScudo__.ostacolo());
+  ok("lo scudo guarda i primi livelli, non tutto", cOst < 700, `${cOst} letture`);
+
+  // Il freno: un sito vivo muta il DOM in continuazione, e lo scudo non deve
+  // rifare la scansione a ogni mutazione. È così che bloccava la scheda.
+  const prima = window.__doctyScudo__.passaggi;
+  const bersaglio = document.getElementById("rumore");
+  for (let i = 0; i < 400; i++) bersaglio.appendChild(document.createElement("span"));
+  await attendi(900);
+  const passate = window.__doctyScudo__.passaggi - prima;
+  ok("400 mutazioni non fanno 400 scansioni", passate <= 3, `${passate} passaggi`);
+
+  // Da qui si contano i *risvegli* — quante volte una mutazione ci ha chiamati —
+  // e non le passate: le passate includono anche la rete di sicurezza periodica,
+  // che scatterebbe comunque e maschererebbe la differenza.
+  const risvegli = () => window.__doctyScudo__.risvegli;
+
+  // Le animazioni di un sito cambiano `class` e `style` in continuazione, in
+  // fondo all'albero. Lì non guardiamo: sarebbe il risveglio più caro e più
+  // inutile che si possa pagare.
+  const profondo = document.querySelector("#rumore .rumore span");
+  const r1 = risvegli();
+  for (let i = 0; i < 400; i++) profondo.className = `anim-${i}`;
+  await attendi(200);
+  ok("400 animazioni in fondo all'albero non svegliano nessuno",
+     risvegli() === r1, `${risvegli() - r1} risvegli`);
+
+  // Ma un overlay che si accende in cima all'albero deve svegliarci subito:
+  // rinunciare a questo per risparmiare sarebbe risparmiare sulla cosa sbagliata.
+  const r2 = risvegli();
+  document.getElementById("overlay").style.display = "block";
+  await attendi(200);
+  ok("un overlay che si accende sveglia subito", risvegli() > r2, `${risvegli() - r2} risvegli`);
+  document.getElementById("overlay").style.display = "none";
+  await attendi(600);
+
+  // Spento lo scudo, la pagina resta ferma: quello che si misura adesso è solo
+  // l'evidenziazione, che si ridisegna sugli eventi e non a intervallo.
+  window.__doctyScudo__.ferma();
+  await attendi(200);
+  letture = 0;
+  await attendi(600);
+  ok("a scudo spento non gira più niente", letture === 0, `${letture} letture`);
+
+  D.highlight(document.getElementById("atb"), "prova", 3000);
+  await attendi(200);
+  letture = 0;
+  await attendi(600);
+  ok("l'evidenziazione non fa polling", letture < 8, `${letture} letture a pagina ferma`);
+
+  const falliti = esiti.filter((r) => r.startsWith("FAIL")).length;
+  const pre = document.createElement("pre");
+  pre.id = "selftest";
+  pre.textContent = `${esiti.join("\n")}\n\n${esiti.length - falliti} passati, ${falliti} falliti`;
+  document.documentElement.appendChild(pre);
+})();
+</script>

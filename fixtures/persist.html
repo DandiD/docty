@@ -1,0 +1,99 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Persistenza della chat — fixture</title>
+<!--
+  Fixture: verifica che il widget riprenda la conversazione dopo un cambio
+  pagina. Invece di navigare davvero, seminiamo in sessionStorage lo stato che
+  la pagina precedente avrebbe salvato, e controlliamo cosa fa il widget al
+  caricamento successivo — che è esattamente la stessa cosa.
+-->
+<style>
+  body { font:14px/1.5 system-ui, sans-serif; margin:0; padding:22px; }
+  pre#selftest { position:fixed; inset:auto 8px 8px 8px; background:#14171a; color:#e7e9ee;
+                 padding:12px; font:12px/1.6 ui-monospace,monospace; white-space:pre-wrap;
+                 z-index:2147483647; }
+</style>
+
+<h1>Ripresa dopo il cambio pagina</h1>
+
+<script>
+// Lo stato che la pagina precedente avrebbe lasciato: una domanda, una risposta,
+// e un segnaposto d'attesa rimasto appeso perché la navigazione è partita da un
+// tool a metà turno.
+sessionStorage.setItem("docty.chat", JSON.stringify({
+  history: [
+    { role: "user", content: "cercami un modello ovale" },
+    { role: "assistant", content: [{ type: "text", text: "Ecco cosa ho trovato." }] },
+  ],
+  log: '<div class="wc-msg wc-me">cercami un modello ovale</div>' +
+       '<div class="wc-msg wc-bot">Ecco cosa ho trovato.</div>' +
+       '<div class="wc-msg wc-bot wc-wait">… 3 s</div>',
+}));
+
+window.__WEBMCP_CHAT__ = {
+  persist: true,
+  endpoint: "/non-usato",
+  greeting: "SALUTO-INIZIALE",
+  chips: ["chip che non deve comparire"],
+};
+</script>
+
+<script src="../chat-widget.js"></script>
+
+<script>
+(async () => {
+  const esiti = [];
+  const eq = (nome, atteso, avuto) => esiti.push(
+    `${JSON.stringify(avuto) === JSON.stringify(atteso) ? "PASS" : "FAIL"}  ${nome}` +
+    (JSON.stringify(avuto) === JSON.stringify(atteso) ? "" :
+      `\n        atteso ${JSON.stringify(atteso)}\n        avuto  ${JSON.stringify(avuto)}`)
+  );
+  const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
+  await attendi(250);
+
+  const log = document.querySelector(".wc-log");
+  const testo = log ? log.textContent : "";
+
+  eq("il widget si e' montato", true, !!log);
+  eq("la domanda precedente e' tornata", true, testo.includes("cercami un modello ovale"));
+  eq("e anche la risposta", true, testo.includes("Ecco cosa ho trovato"));
+  eq("il saluto iniziale non ricompare", false, testo.includes("SALUTO-INIZIALE"));
+  eq("i suggerimenti spariscono", null, document.querySelector(".wc-chips"));
+  eq("il segnaposto d'attesa e' stato rimosso", null, log.querySelector(".wc-wait"));
+  eq("l'utente sa che e' una ripresa", true, testo.includes("ripresa dopo il cambio pagina"));
+
+  // Senza `persist` non deve succedere niente di tutto questo.
+  const pulito = sessionStorage.getItem("docty.chat");
+  eq("lo stato resta in sessionStorage", true, !!pulito && JSON.parse(pulito).history.length === 2);
+
+  // `inspect` non è stato chiesto: niente pulsante "dati", niente registrazione.
+  eq("senza inspect non c'e' il pulsante dati", null, document.querySelector('[data-docty="ispezione"]'));
+  eq("senza inspect non c'e' il registratore", "undefined", typeof window.__doctyIspezione__);
+
+  const radice = document.querySelector(".wc");
+
+  // "azzera" riporta alla schermata iniziale, senza chiudere.
+  radice.querySelector('[data-docty="azzera"]').click();
+  await attendi(60);
+  const dopo = document.querySelector(".wc-log").textContent;
+  eq("azzera cancella la conversazione", false, dopo.includes("cercami un modello ovale"));
+  eq("e rimette il saluto", true, dopo.includes("SALUTO-INIZIALE"));
+  eq("e i suggerimenti tornano", true, !!document.querySelector(".wc-chips button"));
+  eq("e la memoria di sessione e' vuota", null, sessionStorage.getItem("docty.chat"));
+  eq("ma la chat resta aperta", true, radice.isConnected);
+
+  // La × chiude, e lascia detto che la chiusura era voluta.
+  sessionStorage.setItem("docty.chat", JSON.stringify({ history: [{ role: "user", content: "x" }], log: "<div>x</div>" }));
+  radice.querySelector('[aria-label="Chiudi"]').click();
+  eq("la x chiude la chat", false, radice.isConnected);
+  eq("e dichiara che la chiusura e' voluta", "1", radice.dataset.doctyClosed);
+  // Chiudere è definitivo: riaprendo non deve tornare fuori la vecchia conversazione.
+  eq("e azzera la memoria di sessione", null, sessionStorage.getItem("docty.chat"));
+
+  const falliti = esiti.filter((r) => r.startsWith("FAIL")).length;
+  const pre = document.createElement("pre");
+  pre.id = "selftest";
+  pre.textContent = `${esiti.join("\n")}\n\n${esiti.length - falliti} passati, ${falliti} falliti`;
+  document.documentElement.appendChild(pre);
+})();
+</script>

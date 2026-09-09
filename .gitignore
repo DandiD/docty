@@ -12,3 +12,6 @@ npm-debug.log*
 
 # Sistema
 .DS_Store
+
+# Demo
+demo/

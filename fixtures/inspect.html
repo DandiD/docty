@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pannello dati — fixture</title>
+<!--
+  Fixture: verifica il pannello "dati", cioè la risposta alla domanda che arriva
+  sempre — quali dati sono stati mandati al modello. L'endpoint punta a un file
+  JSON statico, così il giro completo si prova senza chiave API e senza spesa.
+-->
+<style>
+  body { font:14px/1.5 system-ui, sans-serif; margin:0; padding:22px; }
+  pre#selftest { position:fixed; inset:auto 8px 8px 8px; background:#14171a; color:#e7e9ee;
+                 padding:12px; font:12px/1.6 ui-monospace,monospace; white-space:pre-wrap;
+                 z-index:2147483647; }
+</style>
+
+<h1>Ispezione dei dati inviati</h1>
+
+<script>
+window.__WEBMCP_CONFIG__ = { domainPublicId: "negozio-di-prova.it" };
+
+// webmcp-lite registra i tool dopo aver scaricato il manifest: qui simuliamo
+// quel ritardo, che è il caso in cui il widget si montava con l'elenco vuoto.
+window.__webmcpReady__ = new Promise((risolvi) => setTimeout(() => {
+  window.__webmcpToolDefs__ = [
+    { name: "list_products", description: "Elenca i prodotti visibili.",
+      inputSchema: { type: "object", properties: {} } },
+    { name: "add_to_cart", description: "Aggiunge al carrello.",
+      inputSchema: { type: "object", properties: {} } },
+  ];
+  risolvi({ registered: ["list_products", "add_to_cart"] });
+}, 300));
+window.__WEBMCP_CHAT__ = {
+  inspect: true,
+  endpoint: "/fixtures/chat-stub.json",
+  greeting: "Ciao.",
+  chips: [],
+};
+</script>
+<script src="../chat-widget.js"></script>
+
+<script>
+(async () => {
+  const esiti = [];
+  const eq = (nome, atteso, avuto) => esiti.push(
+    `${JSON.stringify(avuto) === JSON.stringify(atteso) ? "PASS" : "FAIL"}  ${nome}` +
+    (JSON.stringify(avuto) === JSON.stringify(atteso) ? "" :
+      `\n        atteso ${JSON.stringify(atteso)}\n        avuto  ${JSON.stringify(avuto)}`)
+  );
+  const attendi = (ms) => new Promise((r) => setTimeout(r, ms));
+  await attendi(150);
+
+  eq("il pulsante dati c'e'", true, !!document.querySelector('[data-docty="ispezione"]'));
+  eq("il pulsante azzera c'e'", true, !!document.querySelector('[data-docty="azzera"]'));
+  eq("niente e' stato ancora inviato", 0, window.__doctyIspezione__.turni.length);
+
+  document.querySelector(".wc-in input").value = "cercami un modello ovale";
+  document.querySelector(".wc-in button").click();
+  await attendi(700);
+
+  const turni = window.__doctyIspezione__.turni;
+  eq("la chiamata e' stata registrata", 1, turni.length);
+  eq("con quello che l'utente ha scritto", "cercami un modello ovale", turni[0].messages[0].content);
+  eq("e con la risposta ricevuta", "Ho trovato tre modelli adatti.", turni[0].risposta[0].text);
+  eq("la risposta e' anche comparsa in chat", true,
+     document.querySelector(".wc-log").textContent.includes("Ho trovato tre modelli adatti"));
+
+  // Il tray dei tool si riempie anche se il manifest arriva dopo il montaggio.
+  eq("i tool compaiono nel tray", "list_products add_to_cart",
+     [...document.querySelectorAll(".wc-tray li")].map((l) => l.textContent).join(" "));
+  eq("e sono stati spediti al modello", 2, turni[0].tools.length);
+
+  const html = window.__doctyIspezione__.html();
+  eq("il rapporto dichiara cosa esce", true, html.includes("Esce dalla pagina"));
+  eq("e dichiara cosa non esce", true, html.includes("l'HTML della pagina, i cookie"));
+  eq("il rapporto contiene il messaggio inviato", true, html.includes("cercami un modello ovale"));
+  eq("e la risposta del modello", true, html.includes("Ho trovato tre modelli adatti"));
+
+  // Il pannello aperto deve seguire la conversazione, non restare all'istantanea
+  // di quando è stato aperto. Qui il popup viene negato, come fa un browser che
+  // blocca le finestre: si prova la via di ripiego, l'iframe.
+  window.open = () => null;
+  eq("popup negato: si ripiega sull'iframe", "riquadro", await window.__doctyIspezione__.apri());
+
+  const pannello = () => document.querySelector(".wc-ispe")?.srcdoc ?? "";
+  eq("il pannello mostra la prima domanda", true, pannello().includes("cercami un modello ovale"));
+
+  document.querySelector(".wc-in input").value = "e qualcosa di rotondo?";
+  document.querySelector(".wc-in button").click();
+  await attendi(700);
+
+  eq("dopo la seconda domanda si aggiorna da solo", true,
+     pannello().includes("e qualcosa di rotondo?"));
+  eq("senza perdere la prima", true, pannello().includes("cercami un modello ovale"));
+  eq("e le chiamate registrate sono due", 2, window.__doctyIspezione__.turni.length);
+
+  // La copia dev'essere profonda: la cronologia continua a cambiare dopo l'invio.
+  turni[0].messages[0].content = "manomesso";
+  const html2 = window.__doctyIspezione__.html();
+  eq("il rapporto rilegge lo stato registrato", true, html2.includes("manomesso"));
+
+  const falliti = esiti.filter((r) => r.startsWith("FAIL")).length;
+  const pre = document.createElement("pre");
+  pre.id = "selftest";
+  pre.textContent = `${esiti.join("\n")}\n\n${esiti.length - falliti} passati, ${falliti} falliti`;
+  document.documentElement.appendChild(pre);
+})();
+</script>

@@ -1,0 +1,27 @@
+<!--
+  Icona di Docty. La funzione, non il gesto: un sito che espone le proprie
+  funzioni a un agente, e una chat che le usa.
+
+    la bolla        → l'assistente in pagina
+    i due contatti  → le funzioni esposte, il connettore che le rende invocabili
+    i tre fori      → la conversazione
+
+  Fondo trasparente e un solo colore, l'accento del progetto (#4fb3ae). I punti
+  sono ritagliati invece che dipinti di scuro: così la bolla si legge sia su una
+  barra chiara sia su una scura, senza sapere in anticipo quale sarà.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <mask id="punti">
+    <rect width="128" height="128" fill="#fff"/>
+    <circle cx="42" cy="61" r="6.5" fill="#000"/>
+    <circle cx="64" cy="61" r="6.5" fill="#000"/>
+    <circle cx="86" cy="61" r="6.5" fill="#000"/>
+  </mask>
+
+  <g fill="#4fb3ae" mask="url(#punti)">
+    <rect x="44" y="8" width="14" height="24" rx="7"/>
+    <rect x="70" y="8" width="14" height="24" rx="7"/>
+    <rect x="8" y="28" width="112" height="66" rx="18"/>
+    <path d="M26 90 L26 122 L54 92 Z"/>
+  </g>
+</svg>
