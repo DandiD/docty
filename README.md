@@ -250,16 +250,17 @@ dalla stessa definizione.
 | `test.mjs` | test di contratto del manifest, adatto alla CI |
 | `selftest.sh` | verifica l'estensione contro le fixture, in Chrome headless |
 
-## Su un sito che non è tuo
+## Estensione Chrome
 
-Per mostrare Docty su un sito di cui non hai il sorgente — quello di un cliente prima
-della firma, o il tuo prima di integrarlo — nella cartella `extension/` c'è
-un'estensione Chrome che inietta gli stessi script nella pagina, senza modificarla.
+In `extension/` c'è un'estensione che inietta gli stessi script nella pagina di un sito
+di cui non si ha il sorgente, senza modificarlo. Serve a dimostrare Docty prima che
+l'integrazione esista: sul sito di un cliente prima della firma, o sul proprio prima di
+metterci mano.
 
-È agnostica sul serio: non contiene l'elenco dei siti che conosce, e non ne conosce
-nessuno.
+Non contiene l'elenco dei siti che conosce, perché non ne conosce nessuno: funziona
+sulla struttura di un negozio, non sul suo nome.
 
-### Cosa scavalca, e come
+### Vincoli del browser, e come vengono superati
 
 | Ostacolo | Risposta |
 |---|---|
@@ -316,7 +317,7 @@ c'è un manifest dedicato si ricade su `manifest.shop.json`, generico da e-comme
 | `get_cart` | legge il contatore del carrello |
 | `open_cart` | apre il carrello cliccando il link del sito |
 
-### Perché funziona senza configurarla
+### Funzionamento senza configurazione
 
 **Le euristiche sono strutturali, non nominali.** Una card prodotto è un'ancora interna
 che contiene un'immagine e, poco sopra, un prezzo. Un bottone di aggiunta è un elemento
@@ -353,7 +354,7 @@ __doctyProbe__()   // cosa ha riconosciuto: prodotti, bottone, varianti, carrell
 __doctyDump__()    // se qualcosa manca: com'è fatto il markup vero
 ```
 
-### Convivere con una pagina ostile
+### Convivenza con gli overlay del sito
 
 Un overlay a schermo intero fa quattro cose che rompono un widget iniettato dal di
 fuori, e solo le prime due si parano stando fermi: `inert` e `aria-hidden` sui fratelli,
@@ -371,7 +372,7 @@ preso indica esattamente dentro quale riquadro spostarsi. Se resta bloccato,
 `__doctyFocusReport__()` intercetta le chiamate a `focus()` e dice chi lo ruba, con lo
 stack.
 
-### Il pannello "dati"
+### Il pannello dati
 
 L'estensione parte in modalità tecnica, quindi l'intestazione della chat ha un pulsante
 **dati** che apre il registro di tutto ciò che è uscito dalla pagina: le istruzioni
@@ -390,7 +391,7 @@ non vede la pagina, vede solo quello che i tool gli hanno riportato.
 Spegnendo `inspect` spariscono sia il pulsante sia i dettagli tecnici in chat: è la
 configurazione da vetrina.
 
-### Verificare
+### Verifica automatica
 
 ```bash
 ./selftest.sh        # 104 controlli in Chrome headless, ~60 secondi
@@ -410,7 +411,7 @@ Gira contro cinque pagine in `fixtures/`, che non appartengono a nessun sito rea
 È il primo posto dove guardare quando qualcosa smette di funzionare: se le fixture
 passano e il sito vero no, è cambiato il markup del sito, non il codice di Docty.
 
-### Costo sul thread della pagina
+### Impatto sul thread della pagina
 
 L'estensione gira nella pagina di qualcun altro, e una pagina di negozio è già
 occupata. Due regole tengono il costo dove deve stare.
@@ -457,7 +458,7 @@ fallisce esattamente quando qualcuno reintroduce una scansione totale.
 | 400 animazioni profonde | 0 risvegli | 0 |
 | a scudo spento | 0 | 0 |
 
-### Dove va davvero il tempo di una risposta
+### Latenza di una risposta
 
 Misurato, invece che supposto:
 

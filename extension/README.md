@@ -8,7 +8,7 @@ In produzione l'estensione non servirebbe: chi possiede il sito mette un tag `<s
 e serve il manifest dal proprio backend. Questa è la scorciatoia per mostrare il
 risultato prima che quel lavoro esista.
 
-## Come sta in piedi
+## Architettura
 
 ```
 node server.mjs                 estensione Chrome              sito ospite
@@ -75,7 +75,7 @@ e-commerce. Leggono e agiscono sul DOM del sito ospite:
 Aggiungere un tool significa aggiungere un oggetto a `capabilities[]` e un handler in
 `shop-handlers.js`. Il manifest è la fonte di verità: sul sito non si tocca niente.
 
-## Su un sito nuovo non si configura niente
+## Funzionamento senza configurazione
 
 L'estensione non contiene l'elenco dei siti che conosce, perché non ne conosce nessuno.
 Due scelte di progetto la tengono agnostica:
@@ -102,7 +102,7 @@ Dice che pagina ha riconosciuto, quanti prodotti ha trovato con i primi nomi e p
 ha individuato il bottone di aggiunta, le varianti, il contatore del carrello, il campo di
 ricerca e il link al carrello.
 
-### Quando l'euristica non basta
+### Quando le euristiche non bastano
 
 Capita: un sito con markup fuori dall'ordinario. La correzione **non si scrive
 nell'estensione**. Prima si scopre cosa serve:
@@ -160,7 +160,7 @@ lo prendono al caricamento successivo.
 Le chiavi ammesse sono quelle di `__DOCTY_SELECTORS__`: `card`, `addToCart`,
 `sizeOption`, `cartCount`, `searchBox`.
 
-## Verificare che tutto regga
+## Verifica automatica
 
 ```bash
 ./selftest.sh        # 104 controlli, Chrome headless, ~60 secondi
@@ -192,7 +192,7 @@ funzione può fare. È la rete contro il difetto che ha già bloccato una scheda
 scansione dell'intero documento a ogni mutazione.
 
 `fixtures/inspect.html` è la quinta: fa un giro completo contro un file JSON statico al
-posto del modello, così il pannello "dati" si prova senza chiave API e senza spesa.
+posto del modello, così il pannello dati si prova senza chiave API e senza spesa.
 
 È il primo posto dove guardare quando qualcosa smette di funzionare: se le fixture
 passano e il sito vero no, è cambiato il markup del sito, non il codice di Docty.
@@ -215,7 +215,7 @@ Le fixture sono anche il piano B di una dimostrazione: aprile da
 | `sync.sh` | ricopia `webmcp-lite.js` e `chat-widget.js` dalla root |
 | `icons/icon.svg` | sorgente dell'icona; i PNG si rigenerano da lì |
 
-## Il pannello "dati"
+## Il pannello dati
 
 L'estensione parte in modalità tecnica (`inspect: true` in `docty-boot.js`), quindi
 l'intestazione della chat ha un pulsante **dati**. Apre una finestra con tutto ciò che è
@@ -237,7 +237,7 @@ stesso modo. Da console c'è anche
 Spegnendo `inspect` spariscono sia il pulsante sia i dettagli tecnici in chat: gli
 argomenti delle chiamate e il JSON dei risultati. È la configurazione da vetrina.
 
-## Se qualcosa non va
+## Diagnostica
 
 | Sintomo | Causa | Rimedio |
 |---|---|---|
