@@ -1,0 +1,94 @@
+{
+  "domain": "dom_demo",
+  "version": 4,
+  "capabilities": [
+    {
+      "id": "cap_search",
+      "name": "search_products",
+      "description": "Cerca capi di abbigliamento da ciclismo per parola chiave, categoria o prezzo massimo. Restituisce nome, categoria, prezzo e le taglie disponibili. Usalo prima di qualsiasi altro tool che richieda un product_id.",
+      "page": "/",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Parole chiave, es. 'salopette invernale' o 'antivento'." },
+          "category": {
+            "type": "string",
+            "description": "Filtro per categoria. Ometti per cercare in tutto il catalogo.",
+            "enum": ["maglie", "salopette", "giacche", "intimo", "accessori"]
+          },
+          "max_price": { "type": "number", "description": "Prezzo massimo in euro." },
+          "limit": { "type": "integer", "description": "Numero massimo di risultati.", "maximum": 20 }
+        },
+        "required": ["query"]
+      },
+      "impl": { "mode": "http", "method": "GET", "url": "/api/products/search", "encoding": "query" }
+    },
+    {
+      "id": "cap_product",
+      "name": "get_product",
+      "description": "Scheda completa di un capo: descrizione tecnica, prezzo e giacenza per singola taglia. Usalo per verificare che una taglia sia disponibile prima di aggiungerla al carrello.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string", "description": "ID esatto del capo, es. 'bib-001'. Ottienilo da search_products." }
+        },
+        "required": ["product_id"]
+      },
+      "impl": { "mode": "http", "method": "GET", "url": "/api/products/detail", "encoding": "query" }
+    },
+    {
+      "id": "cap_size",
+      "name": "size_guide",
+      "description": "Consiglia la taglia a partire da statura e circonferenza torace. Usalo quando l'utente non sa quale taglia scegliere, invece di indovinare. La vestibilità dei capi è race.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "height_cm": { "type": "number", "description": "Statura in centimetri." },
+          "chest_cm": { "type": "number", "description": "Circonferenza torace in centimetri. Più affidabile della statura." }
+        },
+        "required": []
+      },
+      "impl": { "mode": "http", "method": "GET", "url": "/api/size-guide", "encoding": "query" }
+    },
+    {
+      "id": "cap_add_cart",
+      "name": "add_to_cart",
+      "description": "Aggiunge un capo al carrello nella taglia indicata. La taglia è obbligatoria: se l'utente non l'ha specificata, chiedigliela o usa size_guide. Verifica prima la disponibilità con get_product.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string", "description": "ID esatto del capo, ottenuto da search_products." },
+          "size": { "type": "string", "description": "Taglia scelta.", "enum": ["XS", "S", "M", "L", "XL", "XXL"] },
+          "quantity": { "type": "integer", "description": "Numero di pezzi. Se l'utente non lo specifica, usa 1.", "minimum": 1, "maximum": 5 }
+        },
+        "required": ["product_id", "size"]
+      },
+      "impl": { "mode": "local", "handler": "addToCart" }
+    },
+    {
+      "id": "cap_cart",
+      "name": "get_cart",
+      "description": "Legge il contenuto attuale del carrello con taglie, quantità e totale in euro.",
+      "input_schema": { "type": "object", "properties": {} },
+      "impl": { "mode": "local", "handler": "getCart" }
+    },
+    {
+      "id": "cap_checkout",
+      "name": "start_checkout",
+      "description": "Avvia la procedura di pagamento con il contenuto attuale del carrello. Azione irreversibile: conferma sempre con l'utente prima di chiamarlo.",
+      "input_schema": { "type": "object", "properties": {} },
+      "impl": { "mode": "local", "handler": "startCheckout" }
+    },
+    {
+      "id": "cap_login",
+      "name": "sign_in",
+      "description": "Apre il modale di accesso all'area personale. Tool registrato dalla pagina stessa: lo snippet lo avvolge solo per la telemetria.",
+      "input_schema": {
+        "type": "object",
+        "properties": { "email": { "type": "string", "description": "Email dell'utente. Chiedila, non inventarla." } },
+        "required": ["email"]
+      },
+      "impl": { "mode": "external" }
+    }
+  ]
+}

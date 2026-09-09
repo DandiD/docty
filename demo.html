@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Officina — abbigliamento da ciclismo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --asfalto:#14171a;      /* piastra dei cartelli, testo */
+  --pioggia:#e7e9e5;      /* pietra bagnata: sfondo pagina */
+  --carta:#ffffff;
+  --celeste:#4fb3ae;      /* l'accento. usato con parsimonia */
+  --segnale:#f2c230;      /* giallo segnaletica: solo per gli avvisi */
+  --grafite:#5c6570;
+  --filo:#d3d7d1;
+
+  --wc-accent:var(--celeste);
+  --wc-head:var(--asfalto);
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  margin:0; background:var(--pioggia); color:var(--asfalto);
+  font:400 15px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:1080px; margin:0 auto; padding:0 24px; }
+
+/* ── Testata: la fascia del pettorale ───────────────────────────────── */
+.top { background:var(--asfalto); color:var(--pioggia); padding:22px 0 20px; }
+.top .wrap { display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+.dossard {
+  font:800 34px/0.85 "Saira Condensed", sans-serif; letter-spacing:.01em;
+  background:var(--pioggia); color:var(--asfalto);
+  padding:10px 12px 8px; border-radius:2px;
+}
+.dossard small { display:block; font:500 9px/1 "IBM Plex Mono", monospace;
+                 letter-spacing:.22em; margin-top:5px; color:var(--grafite); }
+.top h1 { margin:0; font:800 40px/0.92 "Saira Condensed", sans-serif;
+          letter-spacing:.005em; text-transform:uppercase; }
+.top p { margin:5px 0 0; color:#9aa3ac; font-size:13px; max-width:44ch; }
+
+/* ── Firma: il profilo altimetrico che fa anche da indice ───────────── */
+.profilo { background:var(--asfalto); padding:0 0 4px; }
+.profilo svg { display:block; width:100%; height:96px; }
+.profilo .terreno { fill:#1e2328; }
+.profilo .percorso { fill:none; stroke:#39424a; stroke-width:2; }
+.profilo .fatto { fill:none; stroke:var(--celeste); stroke-width:2.5;
+                  stroke-linecap:round; transition:stroke-dashoffset .12s linear; }
+.profilo .tacca { stroke:#4a545d; stroke-width:1; }
+.profilo text { font:500 9px "IBM Plex Mono", monospace; fill:#8d97a1;
+                letter-spacing:.14em; text-transform:uppercase; }
+.profilo a:hover text, .profilo a:focus text { fill:var(--celeste); }
+.profilo a { cursor:pointer; }
+
+/* ── Sezioni ────────────────────────────────────────────────────────── */
+section { padding:44px 0 8px; scroll-margin-top:12px; }
+.occhiello {
+  display:flex; align-items:baseline; gap:12px; margin:0 0 18px;
+  font:500 10px/1 "IBM Plex Mono", monospace; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--grafite);
+}
+.occhiello::after { content:""; flex:1; height:1px; background:var(--filo); }
+.occhiello b { font:600 10px/1 "IBM Plex Mono", monospace; color:var(--asfalto); }
+
+/* ── Cartelli di salita = schede prodotto ───────────────────────────── */
+.griglia { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+.cartello {
+  background:var(--carta); border:1px solid var(--filo); border-radius:3px;
+  display:flex; flex-direction:column; position:relative; overflow:hidden;
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.cartello::before {
+  content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--celeste);
+  transform:scaleY(0); transform-origin:top; transition:transform .22s ease;
+}
+.cartello:hover { transform:translateY(-2px); box-shadow:0 6px 22px rgba(20,23,26,.09); }
+.cartello:hover::before { transform:scaleY(1); }
+.cartello.esaurito::before { background:var(--segnale); transform:scaleY(1); }
+
+.testa { padding:16px 16px 13px; flex:1; }
+.categoria { font:500 9px/1 "IBM Plex Mono", monospace; letter-spacing:.2em;
+             text-transform:uppercase; color:var(--grafite); }
+.cartello h3 { margin:9px 0 7px; font:600 21px/1.05 "Saira Condensed", sans-serif;
+               text-transform:uppercase; letter-spacing:.01em; }
+.nota { margin:0; font-size:13px; line-height:1.5; color:var(--grafite); }
+
+.dati { display:grid; grid-template-columns:1fr 1fr 1fr;
+        border-top:1px solid var(--filo); }
+.dati div { padding:9px 10px; text-align:center; border-left:1px solid var(--filo); }
+.dati div:first-child { border-left:0; text-align:left; padding-left:16px; }
+.dati dt { font:500 8px/1 "IBM Plex Mono", monospace; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--grafite); margin:0 0 4px; }
+.dati dd { margin:0; font:500 14px/1 "IBM Plex Mono", monospace; }
+.dati .prezzo dd { font-size:16px; }
+.dati .fuori dd { color:#a8801a; }
+
+.azione { display:flex; gap:8px; padding:12px 16px 16px; border-top:1px solid var(--filo); }
+.azione select { flex:1; min-width:0; }
+
+/* ── Controlli ──────────────────────────────────────────────────────── */
+button, select, input {
+  font:500 14px "IBM Plex Sans", sans-serif; border-radius:2px;
+}
+select, input {
+  padding:8px 10px; border:1px solid var(--filo); background:var(--carta); color:var(--asfalto);
+}
+button {
+  background:var(--asfalto); color:var(--pioggia); border:0; padding:9px 16px;
+  cursor:pointer; letter-spacing:.02em; transition:background .15s ease;
+}
+button:hover { background:#2a3138; }
+button:disabled { background:#a9b0b6; cursor:not-allowed; }
+:focus-visible { outline:2px solid var(--celeste); outline-offset:2px; }
+
+/* ── Carrello: impostato come un roadbook ───────────────────────────── */
+.roadbook { background:var(--carta); border:1px solid var(--filo); border-radius:3px; }
+.riga { display:grid; grid-template-columns:auto 1fr auto auto;
+        gap:14px; align-items:baseline; padding:13px 16px; border-bottom:1px solid var(--filo); }
+.riga .qta, .riga .imp { font:500 14px "IBM Plex Mono", monospace; }
+.riga .tg { font:500 11px "IBM Plex Mono", monospace; letter-spacing:.1em;
+            color:var(--grafite); }
+.riga strong { font-weight:500; }
+.totale { display:flex; justify-content:space-between; align-items:baseline;
+          padding:14px 16px; background:var(--asfalto); color:var(--pioggia); }
+.totale span { font:500 10px "IBM Plex Mono", monospace; letter-spacing:.2em;
+               text-transform:uppercase; color:#9aa3ac; }
+.totale b { font:800 26px/1 "Saira Condensed", sans-serif; }
+.vuoto { padding:26px 16px; color:var(--grafite); font-size:14px; }
+
+/* ── Console: l'altra metà della pagina, quella per chi sviluppa ────── */
+.console { background:var(--asfalto); border-radius:3px; overflow:hidden; margin-bottom:34px; }
+.console .barra { display:flex; gap:8px; padding:13px; flex-wrap:wrap;
+                  border-bottom:1px solid #262c32; }
+.console select, .console input {
+  background:#1e2328; border-color:#333b42; color:var(--pioggia);
+  font-family:"IBM Plex Mono", monospace; font-size:13px;
+}
+.console input { flex:1; min-width:190px; }
+.console button { background:var(--celeste); color:var(--asfalto); font-weight:600; }
+.console button:hover { background:#6cc4bf; }
+.console pre {
+  margin:0; padding:15px; color:#c9d2d8; background:var(--asfalto);
+  font:400 12.5px/1.6 "IBM Plex Mono", monospace; overflow:auto; max-height:300px;
+}
+.console .ok { color:var(--celeste); }
+.console .ko { color:var(--segnale); }
+
+footer { padding:0 0 60px; color:var(--grafite); font-size:12.5px; }
+footer code { font-family:"IBM Plex Mono", monospace; background:#dcdfd9;
+              padding:1px 5px; border-radius:2px; }
+
+@media (max-width:560px) {
+  .top h1 { font-size:31px; }
+  .dati { grid-template-columns:1fr 1fr; }
+  .dati div:nth-child(3) { border-left:0; border-top:1px solid var(--filo); grid-column:1/-1; }
+}
+@media (prefers-reduced-motion:reduce) {
+  html { scroll-behavior:auto; }
+  *, *::before { transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="dossard">137<small>2026</small></div>
+    <div>
+      <h1>Officina</h1>
+      <p>Abbigliamento da ciclismo. Ogni funzione del negozio è anche uno strumento che un agente può chiamare.</p>
+    </div>
+  </div>
+</header>
+
+<div class="profilo" aria-hidden="true">
+  <svg viewBox="0 0 1200 96" preserveAspectRatio="none">
+    <path class="terreno" d="M0,96 L0,74 C90,70 150,58 220,44 C300,28 340,50 420,42 C500,34 540,16 640,20 C740,24 780,54 870,48 C950,43 1000,26 1080,18 C1130,13 1170,10 1200,9 L1200,96 Z"/>
+    <path class="percorso" d="M0,74 C90,70 150,58 220,44 C300,28 340,50 420,42 C500,34 540,16 640,20 C740,24 780,54 870,48 C950,43 1000,26 1080,18 C1130,13 1170,10 1200,9"/>
+    <path class="fatto" id="fatto" d="M0,74 C90,70 150,58 220,44 C300,28 340,50 420,42 C500,34 540,16 640,20 C740,24 780,54 870,48 C950,43 1000,26 1080,18 C1130,13 1170,10 1200,9"/>
+    <g>
+      <line class="tacca" x1="120" y1="96" x2="120" y2="66"/>
+      <line class="tacca" x1="600" y1="96" x2="600" y2="66"/>
+      <line class="tacca" x1="1010" y1="96" x2="1010" y2="66"/>
+      <a href="#catalogo"><text x="130" y="90">km 0 · catalogo</text></a>
+      <a href="#carrello"><text x="610" y="90">km 4 · carrello</text></a>
+      <a href="#console"><text x="1020" y="90">km 7 · console</text></a>
+    </g>
+  </svg>
+</div>
+
+<main class="wrap">
+  <section id="catalogo">
+    <p class="occhiello"><b>Catalogo</b> otto capi · taglie XS–XXL · vestibilità race</p>
+    <div class="griglia" id="griglia"><p class="nota">Carico il catalogo…</p></div>
+  </section>
+
+  <section id="carrello">
+    <p class="occhiello"><b>Carrello</b> quello che l'agente e tu condividete</p>
+    <div class="roadbook" id="cart"></div>
+  </section>
+
+  <section id="console">
+    <p class="occhiello"><b>Console</b> chiama i tool a mano, senza agente</p>
+    <div class="console">
+      <div class="barra">
+        <select id="toolName" aria-label="Tool"></select>
+        <input id="toolInput" value='{"query":"salopette"}' aria-label="Input JSON" spellcheck="false">
+        <button id="run">Esegui</button>
+      </div>
+      <pre id="out">Avvio…</pre>
+    </div>
+    <footer>
+      Tool esposti su <code>document.modelContext</code>. Per vederli serve
+      <code>chrome://flags/#enable-webmcp-testing</code> o un token di origin trial.
+    </footer>
+  </section>
+</main>
+
+<script>
+// ── Stato dell'app: logica di negozio, non tocca WebMCP ──────────────────
+let CATALOG = [], SIZES = [];
+const cart = new Map();                 // chiave: idProdotto|taglia
+const fmt = (n) => `€ ${n.toFixed(2)}`;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+
+async function loadCatalog() {
+  const r = await fetch("/api/catalog").then((x) => x.json());
+  CATALOG = r.products; SIZES = r.sizes;
+  renderCatalog();
+}
+
+function renderCatalog() {
+  document.getElementById("griglia").innerHTML = CATALOG.map((p) => {
+    const avail = SIZES.filter((s) => p.stock[s] > 0);
+    const pezzi = avail.reduce((n, s) => n + p.stock[s], 0);
+    const scarso = pezzi > 0 && pezzi < 8;
+    return `<article class="cartello${avail.length ? "" : " esaurito"}">
+      <div class="testa">
+        <span class="categoria">${esc(p.category)}</span>
+        <h3>${esc(p.name)}</h3>
+        <p class="nota">${esc(p.description)}</p>
+      </div>
+      <dl class="dati">
+        <div class="prezzo"><dt>Prezzo</dt><dd>${fmt(p.price)}</dd></div>
+        <div><dt>Taglie</dt><dd>${avail.length || "—"}</dd></div>
+        <div class="${avail.length && (scarso || !avail.length) ? "fuori" : ""}">
+          <dt>Scorte</dt><dd>${avail.length ? (scarso ? "poche" : pezzi) : "0"}</dd>
+        </div>
+      </dl>
+      ${avail.length ? `<div class="azione">
+        <select data-size="${p.id}" aria-label="Taglia — ${esc(p.name)}">
+          ${avail.map((s) => `<option>${s}</option>`).join("")}
+        </select>
+        <button data-add="${p.id}">Aggiungi</button>
+      </div>` : `<div class="azione"><button disabled>Esaurito</button></div>`}
+    </article>`;
+  }).join("");
+}
+
+function renderCart() {
+  const el = document.getElementById("cart");
+  if (!cart.size) {
+    el.innerHTML = `<p class="vuoto">Il carrello è vuoto. Aggiungi un capo dal catalogo, oppure chiedilo all'assistente.</p>`;
+    return;
+  }
+  let tot = 0;
+  el.innerHTML = [...cart.values()].map((i) => {
+    tot += i.price * i.qty;
+    return `<div class="riga">
+      <span class="qta">${i.qty}×</span>
+      <strong>${esc(i.name)}</strong>
+      <span class="tg">TG ${i.size}</span>
+      <span class="imp">${fmt(i.price * i.qty)}</span>
+    </div>`;
+  }).join("") + `<div class="totale"><span>Totale</span><b>${fmt(tot)}</b></div>`;
+}
+
+function addToCartLocal(productId, size, qty = 1) {
+  const p = CATALOG.find((x) => x.id === productId);
+  if (!p) throw new Error(`capo sconosciuto: ${productId}`);
+  const disponibili = SIZES.filter((s) => p.stock[s] > 0);
+  if (!size) throw new Error(`Manca la taglia per ${p.name}. Disponibili: ${disponibili.join(", ")}`);
+  const have = p.stock[size] ?? 0;
+  if (!have) throw new Error(`${p.name} taglia ${size} è esaurita. Disponibili: ${disponibili.join(", ") || "nessuna"}`);
+
+  const key = `${productId}|${size}`;
+  const cur = cart.get(key) ?? { id:p.id, name:p.name, price:p.price, size, qty:0 };
+  if (cur.qty + qty > have) throw new Error(`Restano ${have} pezzi di ${p.name} taglia ${size}`);
+  cur.qty += qty;
+  cart.set(key, cur);
+  renderCart();
+  return { added:p.name, size, quantity:cur.qty, cart_lines:cart.size };
+}
+
+document.addEventListener("click", (e) => {
+  const id = e.target.dataset?.add;
+  if (!id) return;
+  const size = document.querySelector(`[data-size="${id}"]`)?.value;
+  try { addToCartLocal(id, size, 1); } catch (err) { alert(err.message); }
+});
+
+loadCatalog().then(renderCart);
+
+// ── Il profilo segue lo scorrimento: è un indice, non un ornamento ──────
+(() => {
+  const p = document.getElementById("fatto");
+  const len = p.getTotalLength();
+  p.style.strokeDasharray = len;
+  p.style.strokeDashoffset = len;
+  const onScroll = () => {
+    const h = document.documentElement;
+    const q = Math.min(1, h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight));
+    p.style.strokeDashoffset = len * (1 - q);
+  };
+  addEventListener("scroll", onScroll, { passive:true });
+  onScroll();
+})();
+
+// ── Config dello snippet: handler richiamati da impl.mode "local" ───────
+window.__WEBMCP_CONFIG__ = {
+  apiBase: location.origin,
+  domainPublicId: "dom_demo",
+  originTrialTokens: [],
+  allowImperativeFrom: [],
+  handlers: {
+    addToCart: ({ product_id, size, quantity = 1 }) => addToCartLocal(product_id, size, quantity),
+    getCart: () => ({
+      items: [...cart.values()].map((i) => ({ id:i.id, name:i.name, size:i.size, qty:i.qty, price:i.price })),
+      total: [...cart.values()].reduce((s, i) => s + i.price * i.qty, 0),
+    }),
+    startCheckout: () => {
+      if (!cart.size) throw new Error("Il carrello è vuoto: aggiungi almeno un capo.");
+      return { status:"checkout_ready", lines:cart.size };
+    },
+  },
+};
+</script>
+
+<script src="./webmcp-lite.js" data-domain="dom_demo"></script>
+
+<script>
+const mc = document.modelContext ?? navigator.modelContext;
+window.__webmcpReady__?.then((r) => {
+  const out = document.getElementById("out");
+  document.getElementById("toolName").innerHTML =
+    r.registered.map((n) => `<option>${n}</option>`).join("");
+  out.innerHTML =
+    `modelContext  <span class="${mc ? "ok" : "ko"}">${mc ? "disponibile" : "assente — attiva il flag WebMCP"}</span>\n` +
+    `registrati    ${r.registered.join(", ")}\n` +
+    `strumentati   ${r.predefined.join(", ") || "—"}`;
+
+  mc?.registerTool({
+    name: "sign_in",
+    description: "Apre il modale di accesso all'area personale.",
+    inputSchema: { type:"object", properties:{ email:{ type:"string" } }, required:["email"] },
+    execute: async ({ email }) => ({ content:[{ type:"text", text:`accesso avviato per ${email}` }] }),
+  });
+});
+
+document.getElementById("run").addEventListener("click", async () => {
+  const out = document.getElementById("out");
+  const name = document.getElementById("toolName").value;
+  try {
+    const input = JSON.parse(document.getElementById("toolInput").value || "{}");
+    out.textContent = JSON.stringify(await window.__webmcpInvoke__(name, input), null, 2);
+  } catch (err) {
+    out.innerHTML = `<span class="ko">${esc(err.message)}</span>`;
+  }
+});
+</script>
+
+<script>
+window.__WEBMCP_CHAT__ = {
+  endpoint: "/v1/chat",
+  title: "Assistente Officina",
+  greeting: "Dimmi che uscita hai in programma e ti dico cosa mettere. Posso anche controllare taglie e disponibilità.",
+  chips: ["Cosa metto sotto la pioggia?", "Sono alto 178, che taglia prendo?", "Accessori sotto i 35 €"],
+  confirmTools: ["add_to_cart", "start_checkout"],
+};
+</script>
+<script src="./chat-widget.js" defer></script>
+</body>
+</html>
