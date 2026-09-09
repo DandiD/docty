@@ -8,18 +8,22 @@
  *     i negozi moderni cambiano pagina senza ricaricare;
  *   • fare da uscita di rete verso il tuo server locale, fuori dalla CSP del sito.
  */
+// Deve corrispondere a PORT nel .env del server. È l'unico valore che le due
+// metà del progetto devono condividere, e non c'è modo di leggerlo da qui: se
+// cambi la porta, cambiala anche qui, altrimenti la chat dirà soltanto che il
+// server locale è irraggiungibile.
 const SERVER = "http://127.0.0.1:8787";
 const PONTE = "http://docty.local";
 
 // Nel mondo isolato: può parlare con il service worker.
 const PONTE_FILE = ["bridge.js"];
 
-// Nel MAIN world, in quest'ordine: ponte e configurazione, lettura del DOM,
-// handler dei tool, registrazione, eventuali correzioni dal manifest, chat.
 // Rimontare la sola chat, quando l'utente l'ha chiusa con la ×: i tool sono
 // già registrati sulla pagina, va ricostruita solo l'interfaccia.
 const RIMONTA = ["chat-widget.js", "shield.js"];
 
+// Nel MAIN world, in quest'ordine: ponte e configurazione, lettura del DOM,
+// handler dei tool, registrazione, eventuali correzioni dal manifest, chat, scudo.
 const SCRIPTS = [
   "docty-boot.js",
   "shop-dom.js",

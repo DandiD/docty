@@ -73,7 +73,7 @@ puoi sovrascriverle al volo: `MODEL=gemini-3.5-flash node server.mjs`.
 | `ANTHROPIC_API_KEY` | dalla Console Anthropic |
 | `MODEL` | opzionale, sovrascrive il default del provider |
 | `MODEL_FALLBACK` | catena di modelli alternativi, separati da virgola |
-| `PORT` | default 8787 |
+| `PORT` | default 8787. Se la cambi, aggiorna anche `SERVER` in `extension/background.js` |
 | `DOMAIN` | identificativo richiesto da `/v1/manifest` |
 | `THINKING_LEVEL` | `minimal` \| `low` \| `medium` \| `high` (solo Gemini 3.x) |
 | `THINKING_BUDGET` | token di ragionamento (solo Gemini 2.5) |
@@ -281,6 +281,11 @@ node server.mjs                 estensione Chrome              sito ospite
 ```bash
 ./extension/sync.sh    # allinea le copie di webmcp-lite.js e chat-widget.js
 ```
+
+L'estensione non ha una configurazione propria: usa lo stesso `.env` del server,
+perché è il server a parlare con il modello. L'unico valore che le due metà devono
+condividere è la porta — `PORT` nel `.env`, `SERVER` in `extension/background.js` — e
+non c'è modo per l'estensione di leggerla da sola.
 
 Poi in Chrome: `chrome://extensions` → **Modalità sviluppatore** → **Carica estensione
 non pacchettizzata** → scegli la cartella `extension`. Apri un negozio qualunque su una
