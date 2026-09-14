@@ -1,3 +1,5 @@
+*Italiano · [English](README.en.md)*
+
 # Docty
 
 Rendi il tuo sito utilizzabile da un agente AI, senza riscriverlo.
